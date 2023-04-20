@@ -22,7 +22,6 @@ from django.http import JsonResponse
 from rest_framework.permissions import AllowAny
 #from .serializers import UserSerializer
 
-
 from django.http import HttpResponse
 from datetime import timedelta
 
@@ -53,12 +52,8 @@ from django.db import IntegrityError
 #from .serializers import UserSerializer
 from .models import User
 
-
-
 from django.contrib.auth import authenticate, login
-
-from .serializers import NewRegisterSerializer,NewLoginSerializer, ResetPassowrdSerializer, CustomPasswordResetSerializer
-
+from .serializers import NewRegisterSerializer,NewLoginSerializer, ResetPassowrdSerializer#, CustomPasswordResetSerializer
 
 from django.core.mail import send_mail
 from django.urls import reverse
@@ -101,7 +96,6 @@ from django.urls import reverse_lazy
 from django.utils.decorators import method_decorator
 from django.views.decorators.debug import sensitive_post_parameters
 
-
 from django.core.exceptions import ValidationError
 from django.shortcuts import render
 from django.shortcuts import get_object_or_404
@@ -111,12 +105,13 @@ from django.template.loader import render_to_string
 from django.http import HttpResponse
 import django
 from django.utils.encoding import force_bytes, force_str
-
+from django.shortcuts import redirect
 from .forms import CustomPasswordResetForm
 from dj_rest_auth.views import (
     PasswordResetView, 
     PasswordResetConfirmView, 
     PasswordChangeView,
+    LoginView
 )
 from django.contrib import messages
 from django.utils.translation import gettext_lazy as _
@@ -174,28 +169,20 @@ class CustomPasswordResetConfirmView(PasswordResetConfirmView):
         return render(request, 'password_reset_confirm.html', context=context)
 
 
-class CustomPasswordResetView(PasswordResetView):
-    serializer_class = CustomPasswordResetSerializer
-    def post(self, request, *args, **kwargs):
-        # Get the user's email from the serializer
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        email = serializer.validated_data['email']
-        
-        # Check if the email is registered in the database
-        users = User.objects.filter(email=email)
-        if not users.exists():
-            return Response({'error': 'El email no está registrado'}, status=status.HTTP_404_NOT_FOUND)
+# class CustomPasswordResetView(PasswordResetView):
 
-        # Reset the user's password and return a success message
-        serializer.save()
-        
-        # Return the success message with OK HTTP status
-        return Response(
-            {'detail': _('Password reset e-mail has been sent.')},
-            status=status.HTTP_200_OK,
-        )
+#     def post(self, request,  *args, **kwargs):
+#         email = request.data.get('email')
+#         # Check if the email is registered in the database
+#         users = User.objects.filter(email=email)
+#         if not users.exists():
+#             return Response({'error': 'El email no está registrado'}, status=status.HTTP_404_NOT_FOUND)
 
+#         # Reset the user's password and return a success message
+#         #serializer.save()
+        
+#         # Return the success message with OK HTTP status
+#         return redirect('password_reset_confirm')
 
     
     
@@ -328,6 +315,16 @@ class CustomPasswordResetView(PasswordResetView):
 #     send_mail(subject, message, None, [user.email])
 
 
+
+class CustomLoginView(LoginView):
+    def get_response_data(self, user):
+        response_data = super().get_response_data(user)
+        response_data['last_login'] = user.last_login
+        # si el usuario acaba de iniciar sesión, actualiza last_login a la hora actual
+        user.last_login = timezone.now()
+        user.save()
+        return response_data
+    
 class RegisterView(APIView):
     serializer_class = NewRegisterSerializer
 

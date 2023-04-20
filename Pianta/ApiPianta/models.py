@@ -1,9 +1,12 @@
 from django.db import models
-from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, UserManager, PermissionsMixin
+from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, UserManager, PermissionsMixin, Permission
 from django.contrib.auth.models import AbstractUser
 from django_resized import ResizedImageField
 from django.contrib.auth.validators import UnicodeUsernameValidator
 from datetime import timedelta
+from django.contrib.auth.models import Group
+from django.utils.translation import gettext_lazy as _
+
 from django.utils import timezone
 
 class UserManager(BaseUserManager):
@@ -32,15 +35,30 @@ class UserManager(BaseUserManager):
 class User(AbstractBaseUser, PermissionsMixin):
     username = models.CharField(unique=True,  max_length=255)
     email = models.EmailField(unique=True)
+    last_login = models.DateTimeField(null=True, blank=True)
     #nickname=models.CharField(max_length=55, unique=True)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
 
+    groups = models.ManyToManyField(
+        Group,
+        verbose_name=_('groups'),
+        blank=True,
+        related_name='api_users'
+    )
+
+    user_permissions = models.ManyToManyField(
+        Permission,
+        verbose_name=_('user permissions'),
+        blank=True,
+        related_name='api_users'
+    )
     objects = UserManager()
 
     USERNAME_FIELD = 'username'
     REQUIRED_FIELDS = ['email']
     
+
     def has_perm(self, perm, obj=None):
         return True
 

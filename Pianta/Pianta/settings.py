@@ -105,23 +105,20 @@ WSGI_APPLICATION = 'Pianta.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
-
-DATABASES = {
 #'cambiar los datos de name, user, password, host.'
-    # 'default': {
-    #     'ENGINE': 'django.db.backends.mysql',
-    #     'NAME': 'pianta',
-    #     'USER': 'root',
-    #     'PASSWORD': 'ensalada22',
-    #     'HOST': '34.72.159.160',
-    #     'PORT': '3306',
-    #     'OPTIONS':{
-    #         'init_command':"SET sql_mode='STRICT_TRANS_TABLES'"
-    #     }
-    # }
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'pianta',
+        'USER': 'girardot',
+        'PASSWORD': 'pianta123',
+        'HOST': '35.232.28.99',
+        'PORT': '3306',
+        'OPTIONS':{
+            'init_command':"SET sql_mode='STRICT_TRANS_TABLES'"
+        }
+    }
 }
-
-
 
 #DATABASE_ROUTERS = [
 #    'database_routers.auth_router.AuthRouter',
@@ -200,9 +197,9 @@ ACCOUNT_USER_MODEL_USERNAME_FIELD=None
 
 
 REST_AUTH_SERIALIZERS={
-   "LOGIN_SERIALIZER":"ApiPianta.serializers.NewLoginSerializer",
-
-   'TOKEN_SERIALIZER': 'ApiPianta.serializers.NewTokenSerializer',
+    "LOGIN_SERIALIZER":"ApiPianta.serializers.NewLoginSerializer",
+    'USER_DETAILS_SERIALIZER': 'ApiPianta.serializers.CustomUserDetailsSerializer',
+    'TOKEN_SERIALIZER': 'ApiPianta.serializers.NewTokenSerializer',
 }
 
 REST_AUTH_REGISTER_SERIALIZERS={
@@ -237,8 +234,13 @@ EMAIL_USE_TLS = True
 EMAIL_USE_SSL = False
 EMAIL_PORT = 587
 EMAIL_HOST_USER = "senaiot04@gmail.com"
-EMAIL_HOST_PASSWORD = "svzgtrjslqksvasv"
+EMAIL_HOST_PASSWORD = "azlipupcfcirmtta"
 
+
+# AUTHENTICATION_BACKENDS = [
+#     'ApiPianta.authentication.CustomBackend',
+#     'django.contrib.auth.backends.ModelBackend',
+# ]
 
 # Configuración de Celery
 # CELERY_BROKER_URL = 'amqp://localhost'

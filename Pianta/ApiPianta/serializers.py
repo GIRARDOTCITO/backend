@@ -3,32 +3,39 @@ from dj_rest_auth.serializers  import LoginSerializer
 
 from django.contrib.auth import get_user_model
 
-from django.contrib.auth.models import User
+#from django.contrib.auth.models import User
 from django.db import transaction
-
+from django.utils.translation import gettext as _
+from django.conf import settings
 from dj_rest_auth.registration.serializers import RegisterSerializer
 
-from dj_rest_auth.serializers import UserDetailsSerializer
+
 from django.contrib.auth import authenticate, get_user_model
 from rest_framework.authtoken.models import Token
 
 from rest_framework.exceptions import ValidationError
-
-from dj_rest_auth.serializers import LoginSerializer, TokenSerializer, PasswordResetSerializer
+from django.core.mail import send_mail
+from dj_rest_auth.serializers import LoginSerializer, TokenSerializer, PasswordResetSerializer, UserDetailsSerializer
 
 from dj_rest_auth.registration.serializers import RegisterSerializer
 from rest_framework import serializers
-from dj_rest_auth.serializers import UserDetailsSerializer
+
 from django.contrib.auth import authenticate, get_user_model
+from django.contrib.auth.tokens import PasswordResetTokenGenerator
+from django.utils.encoding import smart_str, force_bytes
+from django.utils.http import urlsafe_base64_encode
+from django.urls import reverse
+from django.core.mail import EmailMessage
+
 
 UserModel=get_user_model()
 
 
-class NewUserDetailsSerializer(UserDetailsSerializer):
-    class Meta:
-        model=UserModel
-        fields=["email","pk","username"]
+class CustomUserDetailsSerializer(UserDetailsSerializer):
+    last_login = serializers.DateTimeField(read_only=True)
 
+    class Meta(UserDetailsSerializer.Meta):
+        fields = UserDetailsSerializer.Meta.fields + ('last_login',)
 
 class NewRegisterSerializer(serializers.Serializer):
     username = serializers.CharField(max_length=UserModel._meta.get_field('username').max_length, required=False)
@@ -45,28 +52,44 @@ class NewRegisterSerializer(serializers.Serializer):
             Token.objects.create(user=user)
         return user
 
-class CustomPasswordResetSerializer(PasswordResetSerializer):
-    
-    email = serializers.EmailField()
+# class CustomPasswordResetSerializer(PasswordResetSerializer):
+#     email = serializers.EmailField()
 
-    def validate_email(self, value):
-        # Check if the email is registered in the database
-        try:
-            user = User.objects.get(email=value)
-        except User.DoesNotExist:
-            raise serializers.ValidationError(_('This email is not registered.'))
+#     def validate_email(self, value):
+#         # Check if the email is registered in the database
+#         try:
+#             user = UserModel.objects.get(email=value)
+#         except UserModel.DoesNotExist:
+#             raise serializers.ValidationError(_('This email is not registered.'))
+#         return value
 
-        return value
+    # def send_reset_email(self, user):
+    #     uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
+    #     token = PasswordResetTokenGenerator().make_token(user)
+    #     reset_link = reverse('password_reset_confirm', kwargs={'uidb64': uidb64, 'token': token})
+    #     reset_url = 'http://127.0.0.1:8000/' + reset_link  # Reemplaza 'your_website.com' por tu dominio
+    #     message = 'Please use this link to reset your password:\n\n' + reset_url
+    #     email = EmailMessage(
+    #         subject='Password reset',
+    #         body=message,
+    #         from_email=settings.EMAIL_HOST_USER,
+    #         to=[user.email],
+    #     )
+    #     email.send()
 
-    def save(self, **kwargs):
-        # Use Django's built-in password reset mechanisms to send a reset email to the user
-        email = self.validated_data['email']
-        for user in User.objects.filter(email=email):
-            user.email_user(
-                subject=_('Password reset'),
-                message=_('Please click on the following link to reset your password')
-                ),
-            
+    # def save(self, **kwargs):
+    #     # Use Django's built-in password reset mechanisms to send a reset email to the user
+    #     email = self.validated_data['email']
+    #     for user in UserModel.objects.filter(email=email):
+    #         self.send_reset_email(user)
+    #         # send_mail(
+    #         #     _('Password reset'),
+    #         #     _('Please click on the following link to reset your password'),
+    #         #     from_email=settings.DEFAULT_FROM_EMAIL,
+    #         #     recipient_list=[user.email],
+    #         #     fail_silently=False,
+    #         # )
+                            
 class NewLoginSerializer(LoginSerializer):
     pass
 
@@ -83,8 +106,8 @@ class ResetPassowrdSerializer(serializers.Serializer):
 class CustomPasswordResetConfirmSerializer(serializers.Serializer):
     new_password1 = serializers.CharField(required=True, style={'input_type': 'password'})
     new_password2 = serializers.CharField(required=True, style={'input_type': 'password'})
-    uid = serializers.CharField(required=False)
-    token = serializers.CharField(required=False)
+    uid = serializers.CharField(required=True)
+    token = serializers.CharField(required=True)
     
     def __str__(self):
         return f"CustomPasswordResetConfirmSerializer(uid={self.validated_data.get('uid')})"
